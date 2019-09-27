@@ -7,13 +7,6 @@ This is project for my data communications course, written in java. Copy and use
   >$java fpt_server <port number>
 3. Run ftp_client with
   >$java ftp_client
-  
-  >------------ ftp_client ------------
-  
-  >GET STARTED - CONNECT [address] [port]
-  
-  >CONNECT [address] [port]
-  
 4. Use commands.
   * LIST
   * RETRIEVE [filename]
