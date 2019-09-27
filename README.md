@@ -6,10 +6,10 @@ This is project for my data communications course, written in java. Copy and use
 2. Run ftp_server with 
   >$java fpt_server <port number>
 3. Run ftp_client with
-  >$java ftp_client
-  >------------ ftp_client ------------
-  >GET STARTED - CONNECT <address> <port>
-  >CONNECT <address> <port>
+  >$java ftp_client\n
+  >------------ ftp_client ------------\n
+  >GET STARTED - CONNECT <address> <port>\n
+  >CONNECT <address> <port>\n
 4. Use commands.
   * LIST
   * RETRIEVE <filename>
