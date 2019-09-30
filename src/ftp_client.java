@@ -137,7 +137,7 @@ public class ftp_client {
         else if(msgFromServer.compareTo("READY")==0)
         {
             System.out.println("Receiving File ...");
-            File f=new File(fileName);
+            File f=new File( curDir + "/" + fileName); //this hotfix can lead to some serious issues down the road
             if(f.exists())
             {
                 String Option;
@@ -213,7 +213,6 @@ public class ftp_client {
         System.out.println(dis.readUTF());
 
     }
-
 
     //HELPER METHODS
     private static InetAddress convertToIP(String address) throws UnknownHostException {
