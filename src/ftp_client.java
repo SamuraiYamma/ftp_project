@@ -1,7 +1,16 @@
 import java.io.*;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.*;
 import java.net.*;
 public class ftp_client {
+    private static DataInputStream dis;
+    private static DataOutputStream dos;
+    private static BufferedReader br;
+
+    private static Path path= FileSystems.getDefault().getPath(".");
+    private static File curDir = path.toFile();
+
     public static void main(String[] args) {
         //WELCOME MESSAGE
         System.out.printf("------------ ftp_client ------------\n" +
@@ -23,58 +32,53 @@ public class ftp_client {
             else{
                 System.exit(-1);
             }
+            //get cur dir
+            curDir = getCurDir();
+
             //establish new socket connection
             Socket clientsocket = new Socket(ip, port);
 
             //obtain input and output streams
-            DataInputStream dis = new DataInputStream(clientsocket.getInputStream());
-            DataOutputStream dos = new DataOutputStream(clientsocket.getOutputStream());
+            dis = new DataInputStream(clientsocket.getInputStream());
+            dos = new DataOutputStream(clientsocket.getOutputStream());
+            br = new BufferedReader(new InputStreamReader(System.in));
 
             //exchange between client and client handler
             while (true){
                 System.out.println(dis.readUTF());
-                String tosend = scn.next();
+                String tosend = scn.nextLine();
                 dos.writeUTF(tosend);
-
-                //Close connection upon receiving QUIT
-                if(tosend.equalsIgnoreCase("QUIT")){
-                    System.out.printf("Closing %s ...\n", clientsocket.toString());
-                    clientsocket.close();
-                    System.out.printf("Closed\n");
-                    break;
-                }
 
                 //TODO: DOING STUFF AS REQUESTED BY CLIENT
                 try {
-                    switch (tosend) {
-                        case "LIST":
-                            listFiles();
-                            break;
-                        case "RETRIEVE":
-                            recieveFile();
-                            break;
-                        case "STORE":
-                            sendFile(scn.next(), dis, dos, scn);
-                            break;
-                        case "HELP":
-                        case "?":
-                        case "h":
-                        case "-h":
-                        case "help":
-                            printHELP();
-                            break;
-                        default:
-                            System.out.printf("Command: '%s' not recognized\n", tosend);
-                            break;
+                    if(tosend.equalsIgnoreCase("LIST")){
+                        System.out.println("Retrieving list data...");
+                        //print the retrieved files
+                        System.out.println(dis.readUTF());
+                    }
+                    else if (tosend.contains("STORE")){
+                        System.out.println("Preparing to store...");
+                        //send file to the server
+                        sendFile(seperateCommand(tosend));
+                        //break apart input and retrieve file location
+                    }
+                    else if (tosend.contains("RETRIEVE")){
+                        System.out.println("Preparing to receive file...");
+                        //receive a file from server
+                        receiveFile(seperateCommand(tosend));
+                        //break apart input and retrieve file name
+                    }
+                    else if(tosend.equalsIgnoreCase("QUIT")){
+                        System.out.printf("Closing %s ...\n", clientsocket.toString());
+                        clientsocket.close();
+                        System.out.printf("Closed\n");
+                        break;
+                    }
+                    else if (tosend.contains("HELP")){
+                        printHELP();
                     }
                 }
-                catch (FileNotFoundException e){
-                    e.printStackTrace();
-                    System.out.printf("File not found\n");
-                } catch (IOException e){
-                    e.printStackTrace();
-                    System.out.printf("Could not get response from server");
-                } catch (Exception e){
+                catch (Exception e){
                     e.printStackTrace();
                     System.out.printf("Not sure what went wrong\n");
                 }
@@ -109,8 +113,9 @@ public class ftp_client {
     }
     //METHODS
     static void printHELP(){
-        System.out.printf("\n--------------------------------------" +
-                "\nHELP SECTION --- CLIENT COMMANDS\n" +
+        System.out.printf("\n--------------------------------------\n" +
+                "HELP SECTION --- CLIENT COMMANDS\n" +
+                "--------------------------------------\n" +
                 "LIST\n" +
                 "RETRIEVE <filename>\n" +
                 "STORE <filename>\n" +
@@ -119,47 +124,94 @@ public class ftp_client {
     }
     static void listFiles(){
     }
-    static void recieveFile(){
-    }
-    static void sendFile(String filename, DataInputStream dis, DataOutputStream dos, Scanner scn) throws IOException {
-        File file = new File(filename);
-        if(!file.exists()){
-            throw new FileNotFoundException();
+    static void receiveFile(String fileName) throws IOException {
+
+        dos.writeUTF(fileName);
+        String msgFromServer=dis.readUTF();
+
+        if(msgFromServer.compareTo("File Not Found")==0)
+        {
+            System.out.println("File not found on Server ...");
+            return;
         }
-        //get input from server
-        String response = dis.readUTF();
-        if(response.equalsIgnoreCase("File already exists")){
-            String choice;
-            System.out.print("File already exists. Would you like to overwrite it? (Y/N)");
-            choice = scn.next();
-            //TODO: We should validate that it is a string
-            switch (choice){
-                case "Y":
-                    //cool
-                case "y":
-                    //cool
-                case "N":
-                case "n":
+        else if(msgFromServer.compareTo("READY")==0)
+        {
+            System.out.println("Receiving File ...");
+            File f=new File(fileName);
+            if(f.exists())
+            {
+                String Option;
+                System.out.println("File Already Exists. Want to OverWrite (Y/N) ?");
+                Option=br.readLine();
+                if(Option=="N")
+                {
                     dos.flush();
                     return;
-                default:
-                    System.out.print("Could not understand. Please enter Y or N.");
-            }
-            //get ready to send file
-            FileOutputStream fos = new FileOutputStream(file);
-            int ch;
-            String tmp;
-            do{
-                tmp = dis.readUTF();
-                ch = Integer.parseInt(tmp);
-                if(ch != -1){
-                    fos.write(ch);
                 }
             }
-            while(ch != -1);
-            fos.close();
-            //maybe show prompt conveying transfer success?
+            FileOutputStream fout = new FileOutputStream(f);
+            int ch;
+            String temp;
+            do
+            {
+                temp=dis.readUTF();
+                ch=Integer.parseInt(temp);
+                if(ch!=-1)
+                {
+                    fout.write(ch);
+                }
+            }while(ch!=-1);
+            fout.close();
+            System.out.println(dis.readUTF());
+
         }
+
+
+    }
+    static void sendFile(String filename) throws IOException {
+
+        File f=new File(filename); //try the long way
+        if(!f.exists()) {
+            f = new File(curDir + "/"+ filename); //try the shorthand way
+            if (!f.exists()) {
+                System.out.println("Cannot find file...");
+                dos.writeUTF("File not found");
+                return;
+            }
+        }
+
+
+        dos.writeUTF(filename); //send message to server
+
+        String msgFromServer=dis.readUTF();
+        if(msgFromServer.compareTo("File Already Exists")==0)
+        {
+            String Option;
+            System.out.println("File Already Exists. Want to OverWrite (Y/N) ?");
+            Option=br.readLine();
+            if(Option=="Y")
+            {
+                dos.writeUTF("Y");
+            }
+            else
+            {
+                dos.writeUTF("N");
+                return;
+            }
+        }
+
+        System.out.println("Sending File ...");
+        FileInputStream fin=new FileInputStream(f);
+        int ch;
+        do
+        {
+            ch=fin.read();
+            dos.writeUTF(String.valueOf(ch));
+        }
+        while(ch!=-1);
+        fin.close();
+        System.out.println(dis.readUTF());
+
     }
 
 
@@ -185,5 +237,33 @@ public class ftp_client {
             e.printStackTrace();
         }
         return Integer.parseInt(null);
+    }
+    private static File getCurDir(){
+        //search current
+        String name = "ftp_server.java";
+        File[] fileList = curDir.listFiles();
+        for(File f:fileList){
+            if(f.isDirectory()){
+                File[] dir = f.listFiles();
+                for (File target:dir){
+                    if (target.isFile() && target.getName().equalsIgnoreCase(name)) {
+//                        System.out.println("curDir: " + f); //testing
+                        return f;
+                    }
+                }
+            }
+        }
+        return curDir;
+    }
+    private static String seperateCommand(String command){
+        String filename;
+        if (command.contains("STORE")){
+            filename = command.replace("STORE ","");
+        }
+        else if (command.contains("RETRIEVE")){
+            filename = command.replace("RETRIEVE ", "");
+        }
+        else return command;
+        return filename;
     }
 }
