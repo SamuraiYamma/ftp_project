@@ -13,7 +13,9 @@ This is project for my data communications course, written in java. Copy and use
   * STORE [filename]
   * QUIT
 
-Entering: HELP, help, -h, h or ? will bring up a help screen.
+Entering: HELP will bring up a help screen.
 The command
   >QUIT
   is available in both programs to close the connection. 
+  
+help, -h, h or ? are no longer avaialble help commands in this version.
