@@ -4,9 +4,9 @@ This is project for my data communications course, written in java. Copy and use
 ## How to use it
 1. Download ftp_server and ftp_client from the src folder
 2. Run ftp_server with 
-  >$java fpt_server [port number]
+  >$ java fpt_server [port number]
 3. Run ftp_client with
-  >$java ftp_client
+  >$ java ftp_client
 4. Use commands.
   * LIST
   * RETRIEVE [filename]
